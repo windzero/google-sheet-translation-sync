@@ -27,9 +27,10 @@
   "dependencies": {
     "chalk": "^3.0.0",
     "commander": "^4.1.0",
-    "googleapis": "39",
     "fs-extra": "^8.1.0",
-    "lodash": "^4.17.15"
+    "googleapis": "39",
+    "lodash": "^4.17.15",
+    "xml2json": "^0.12.0"
   },
   "bin": {
     "translation-sync": "bin/translation-sync.js"

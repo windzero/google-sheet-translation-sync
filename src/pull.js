@@ -6,6 +6,8 @@ const path = require('path');
 const _ = require('lodash');
 const { createGetColNumber } = require('./utils');
 
+const parser = require('xml2json');
+
 module.exports = function(config) {
   authorize(config, run);
   const getColNumber = createGetColNumber(config.header);
@@ -78,11 +80,55 @@ module.exports = function(config) {
         }
       });
 
-      const finalTranslation = {
+      // structure for xml
+      const entries = {
         ...prevObj,
         ...translation
-      };
-      await fs.outputJSON(prevPath, finalTranslation, { spaces: 2 });
+      }
+
+      switch (config.format) {
+        case 'xml':
+          const finalTranslation = {
+            resources: {
+              string: Object.entries(entries).map(([k,v]) => {
+                return {
+                  name: k,
+                  ['$t']: v,
+                }
+              })
+            }
+          };
+
+          // console.log(finalTranslation)
+
+          // force some formatting in a lazy way
+          var xml = parser.toXml(JSON.stringify(finalTranslation), { sanitize: true, reversible: true }).replace('<resources>', '<resources>\n').replaceAll('</string>', '</string>\n').replaceAll('<string name=', '\t<string name=');
+          fs.writeFile(prevPath, xml, function(err, data) {
+            if (err) {
+              console.log(err);
+            }
+          });
+
+          break
+
+        case 'strings':
+          // escape quotes
+          let output = Object.entries(entries).map(([k,v]) => {
+                return `"${k.replaceAll("\\", "\\\\").replaceAll("\"", "\\\"")}" = "${v.replaceAll("\\", "\\\\").replaceAll("\"", "\\\"")}"`
+              }).join('\n')
+          fs.writeFile(prevPath, output, function(err, data) {
+            if (err) {
+              console.log(err);
+            }
+          });
+
+          break
+
+        default: // json
+          await fs.outputJSON(prevPath, entries, { spaces: 2 });
+
+          break
+      }
     }
   }
 };
